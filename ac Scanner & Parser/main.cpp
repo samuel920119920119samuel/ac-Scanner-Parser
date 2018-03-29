@@ -10,12 +10,14 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <set>
 using namespace std;
 
 // whever meets terminal, iterator move to the next token in ts
 
 void Error(string term){
     cout<<term<<" error"<<endl;
+    exit(EXIT_SUCCESS);
 }
 
 void Match(string inputToken, string correctToken){
@@ -73,11 +75,76 @@ void Stmts(vector<string>::iterator &it){
     else    Error("Stmts");
 }
 
+////////////////////////// Scanner //////////////////////////
+set<char> numSet = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+set<char> idSet = {'a','b','c','d','e','g','h','j','k','l','m','n','o','q','r','s','t','u','v','w','x','y','z'};
+
+struct token{
+    string type;
+    string value;
+};
+token makeToken(string type, string value){
+    token thisToken = {type, value};
+    return thisToken;
+}
+
+token ScanDigits(string::iterator &it){
+    string type, val;
+    while(numSet.count(*it)){
+        val = val + *it;
+        it++;
+    }
+    if(*it != '.')  type = "inum";
+    else{   //*it == '.'
+        type = "fnum";
+        val = val + '.';
+        it++;
+        while(numSet.count(*it)){
+            val = val + *it;
+            it++;
+        }
+    }
+    return makeToken(type, val);
+}
+
+vector<token> Scanner(string code){
+    vector<token> ans;
+    for(string::iterator it=code.begin(); it!=code.end()+1; ++it){
+        while(*it == ' ')   it++;
+        if(it == code.end())   ans.push_back(makeToken("$", "$"));
+        else if(numSet.count(*it))  ans.push_back(ScanDigits(it));
+        else{
+            if(idSet.count(*it)) {
+                string idStr; idStr = idStr + *it;
+                ans.push_back(makeToken("id", idStr));
+            }
+            else if(*it == 'p') ans.push_back(makeToken("print", "p"));
+            else if(*it == '=') ans.push_back(makeToken("assign", "="));
+            else if(*it == '+') ans.push_back(makeToken("plus", "+"));
+            else if(*it == '-') ans.push_back(makeToken("minus", "-"));
+            else    Error("lexical");
+        }
+    }
+    return ans;
+}
+////////////////////////// Scanner //////////////////////////
 
 int main(int argc, const char * argv[]) {
-    vector<string> ts = {"id", "assign", "inum", "id", "assign", "id", "plus", "fnum", "print", "id", "$"};
-    vector<string>::iterator it = ts.begin();
-    Stmts(it);
+    // Scanner
+    string code;
+    getline(cin, code);
+    vector<token> ts = Scanner(code);
+    
+    // Parser
+    // extract type in ts and store in tsToken
+    // cuz we only need type for parser
+    vector<string> tsToken;
+    for(vector<token>::iterator it=ts.begin(); it!=ts.end(); it++){
+        tsToken.push_back(it->type);
+    }
+    vector<string>::iterator itToken = tsToken.begin();
+    Stmts(itToken);
     cout<<"all done"<<endl;
+    
     return 0;
 }
